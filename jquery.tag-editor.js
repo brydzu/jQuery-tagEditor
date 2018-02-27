@@ -42,7 +42,7 @@
             selector = this;
 
         // store regex and default delimiter in options for later use
-        o.dregex = new RegExp('[{{' + o.delimiter.replace('-', '\-') + '}}]', 'g');
+        o.dregex = o.dregex ? o.dregex : new RegExp('[' + o.delimiter.replace('-', '\-') + ']', 'g');
 
         // public methods
         if (typeof options === 'string') {
@@ -101,7 +101,7 @@
                     if (sel.rangeCount > 0 && el && el.length) {
                         var tags = [],
                             splits = sel.toString().split(el.prev().data('options').dregex);
-                        for (i = 0; i < splits.length; i++) {
+                        for (var i = 0; i < splits.length; i++) {
                             var tag = $.trim(splits[i]);
                             if (tag) {
                                 tags.push(tag);
