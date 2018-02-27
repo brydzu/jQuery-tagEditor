@@ -42,7 +42,7 @@
             selector = this;
 
         // store regex and default delimiter in options for later use
-        o.dregex = o.dregex ? o.dregex : new RegExp('[' + o.delimiter.replace('-', '\-') + ']', 'g');
+        o.dregex = o.dregex ? o.dregex : new RegExp('[,]', 'g');
 
         // public methods
         if (typeof options === 'string') {
@@ -65,7 +65,7 @@
                         return false;
                     }
                     // insert new tag
-                    $('<li><div class="tag-editor-spacer">&nbsp;' + o.delimiter[0] + '</div><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed).find('.tag-editor-tag')
+                    $('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed).find('.tag-editor-tag')
                         .html('<input type="text" maxlength="' + o.maxLength + '">').addClass('active').find('input').val(val).blur();
                     if (!blur) {
                         ed.click();
@@ -77,13 +77,22 @@
                 else if (options === 'removeTag') {
                     // trigger delete on matching tag, then click editor to
                     // create a new tag
-                    $('.tag-editor-tag', ed).filter(function () {return $(this).text() === val;}).closest('li').find('.tag-editor-delete').click();
+                    $('.tag-editor-tag', ed)
+                        .filter(function () {
+                            return $(this).text() === val;
+                        }).closest('li')
+                        .find('.tag-editor-delete')
+                        .click();
                     if (!blur) {
                         ed.click();
                     }
                 }
                 else if (options === 'destroy') {
-                    el.removeClass('tag-editor-hidden-src').removeData('options').off('focus.tag-editor').next('.tag-editor').remove();
+                    el.removeClass('tag-editor-hidden-src')
+                        .removeData('options')
+                        .off('focus.tag-editor')
+                        .next('.tag-editor')
+                        .remove();
                 }
             });
             return options === 'getTags' ? response : this;
@@ -132,7 +141,7 @@
             ed.append('<li style="width:1px">&nbsp;</li>');
 
             // markup for new tag
-            var new_tag = '<li><div class="tag-editor-spacer">&nbsp;' + o.delimiter[0] + '</div><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>';
+            var new_tag = '<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>';
 
             // helper: update global data
             function set_placeholder () {
@@ -151,7 +160,7 @@
                     }
                 }).get();
                 ed.data('tags', tag_list);
-                el.val(tag_list.join(o.delimiter[0]));
+                el.val(tag_list.join());
                 // change callback except for plugin init
                 if (!init) {
                     if (old_tags !== tag_list.toString()) {
@@ -206,7 +215,7 @@
                 }
 
                 if (loc === 'before') {
-                    $(new_tag).insertBefore(closest_tag.closest('li')).find('.tag-editor-tag').click();
+                    $(new_tag).before(closest_tag.closest('li')).find('.tag-editor-tag').click();
                 }
                 else if (loc === 'after') {
                     $(new_tag).insertAfter(closest_tag.closest('li')).find('.tag-editor-tag').click();
@@ -290,12 +299,17 @@
             });
 
             // helper: split into multiple tags, e.g. after paste
-            function split_cleanup (input) {
+            function tagCleanup (input) {
                 var li = input.closest('li'),
-                    sub_tags = input.val().replace(/ +/, ' ').split(o.dregex),
+                    sub_tags = mustacheTags(input.val().replace(/ +/, ' ')),
                     old_tag = input.data('old_tag'),
-                    old_tags = tag_list.slice(0), exceeded = false, cb_val; // copy
-                                                                            // tag_list
+                    old_tags = tag_list.slice(0),
+                    exceeded = false,
+                    cb_val;
+
+                if (!sub_tags){
+                    return;
+                }
                 for (var i = 0; i < sub_tags.length; i++) {
                     tag = $.trim(sub_tags[i]).slice(0, o.maxLength);
                     if (o.forceLowercase) {
@@ -315,7 +329,7 @@
                         });
                     }
                     old_tags.push(tag);
-                    li.before('<li><div class="tag-editor-spacer">&nbsp;' + o.delimiter[0] + '</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                    li.before('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
                     if (o.maxTags && old_tags.length >= o.maxTags) {
                         exceeded = true;
                         break;
@@ -331,10 +345,16 @@
                 update_globals();
             }
 
+            function mustacheTags (input) {
+                return input.match(/{{\s*[\w\.]+\s*}}/g);
+            }
+
             ed.on('blur', 'input', function (e) {
                 e.stopPropagation();
-                var input = $(this), old_tag = input.data('old_tag'),
-                    tag = $.trim(input.val().replace(/ +/, ' ').replace(o.dregex, o.delimiter[0]));
+                var input = $(this),
+                    old_tag = input.data('old_tag'),
+                    tag = $.trim(input.val().replace(/ +/, ' '));
+
                 if (!tag) {
                     if (old_tag && o.beforeTagDelete(el, ed, tag_list, old_tag) === false) {
                         input.val(old_tag).focus();
@@ -348,8 +368,8 @@
                         update_globals();
                     }
                 }
-                else if (tag.indexOf(o.delimiter[0]) >= 0) {
-                    split_cleanup(input);
+                else if (!mustacheTags(tag)) {
+                    tagCleanup(input);
                     return;
                 }
                 else if (tag !== old_tag) {
@@ -391,17 +411,21 @@
             ed.on('paste', 'input', function (e) {
                 $(this).removeAttr('maxlength');
                 pasted_content = $(this);
-                setTimeout(function () { split_cleanup(pasted_content); }, 30);
+                setTimeout(function () {
+                    tagCleanup(pasted_content);
+                }, 30);
             });
 
             // keypress delimiter
-            var inp;
-            ed.on('keypress', 'input', function (e) {
-                if (o.delimiter.indexOf(String.fromCharCode(e.which)) >= 0) {
-                    inp = $(this);
-                    setTimeout(function () { split_cleanup(inp); }, 20);
-                }
-            });
+            // var inp;
+            // ed.on('keypress', 'input', function (e) {
+            //     if ('}'.indexOf(String.fromCharCode(e.which)) >= 0) {
+            //         inp = $(this);
+            //         setTimeout(function () {
+            //             tagCleanup(inp);
+            //         }, 20);
+            //     }
+            // });
 
             ed.on('keydown', 'input', function (e) {
                 var $t = $(this),
@@ -415,7 +439,7 @@
                         prev_tag.click().find('input').caret(-1);
                     }
                     else if ($t.val() && !(o.maxTags && ed.data('tags').length >= o.maxTags)) {
-                        $(new_tag).insertBefore($t.closest('li')).find('.tag-editor-tag').click();
+                        $(new_tag).before($t.closest('li')).find('.tag-editor-tag').click();
                     }
                     return false;
                 }
@@ -439,7 +463,7 @@
                             prev_tag.click().find('input').caret(0);
                         }
                         else if ($t.val() && !(o.maxTags && ed.data('tags').length >= o.maxTags)) {
-                            $(new_tag).insertBefore($t.closest('li')).find('.tag-editor-tag').click();
+                            $(new_tag).before($t.closest('li')).find('.tag-editor-tag').click();
                         }// allow tabbing to previous element
                         else {
                             el.attr('disabled', 'disabled');
@@ -510,7 +534,7 @@
                         tag = tag.toLowerCase();
                     }
                     tag_list.push(tag);
-                    ed.append('<li><div class="tag-editor-spacer">&nbsp;' + o.delimiter[0] + '</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                    ed.append('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
                 }
             }
             update_globals(true); // true -> no onChange callback
@@ -531,7 +555,6 @@
         initialTags: [],
         maxTags: 0,
         maxLength: 256,
-        delimiter: ',;',
         placeholder: '',
         forceLowercase: true,
         removeDuplicates: true,
@@ -541,7 +564,21 @@
         autocomplete: null, // options dict for jQuery UI autocomplete
 
         // callbacks
-        onChange: function () {},
+        onChange: function (field, editor, tags) {
+            $('li', editor).each(function () {
+                var li = $(this),
+                    text = li.text();
+                if (li.find('.tag-editor-tag').html() == 'red') {
+                    li.addClass('red-tag');
+                }
+                else if (li.find('.tag-editor-tag').html() == 'green') {
+                    li.addClass('green-tag');
+                }
+                else {
+                    li.removeClass('red-tag green-tag');
+                }
+            });
+        },
         beforeTagSave: function () {},
         beforeTagDelete: function () {}
     };
