@@ -42,7 +42,7 @@
             selector = this;
 
         // store regex and default delimiter in options for later use
-        o.dregex = new RegExp('[' + o.delimiter.replace('-', '\-') + ']', 'g');
+        o.dregex = new RegExp('[{{' + o.delimiter.replace('-', '\-') + '}}]', 'g');
 
         // public methods
         if (typeof options === 'string') {
@@ -122,7 +122,7 @@
             var el = $(this), tag_list = []; // cache current tags
 
             // create editor (ed) instance
-            var ed = $('<ul ' + (o.clickDelete ? 'oncontextmenu="return false;" ' : '') + 'class="tag-editor"></ul>').insertAfter(el);
+            var ed = $('<ul ' + (o.clickDelete ? 'oncontextmenu="return false;" ' : '') + 'class="tag-editor ' + el.attr('class') + '"></ul>').insertAfter(el);
             el.addClass('tag-editor-hidden-src') // hide original field
                 .data('options', o) // set data on hidden field
                 .on('focus.tag-editor', function () { ed.click(); }); // simulate
@@ -165,7 +165,7 @@
                 var d, dist = 99999, loc;
 
                 // do not create tag when user selects tags by text selection
-                if (window.getSelection && getSelection() != '') {
+                if (window.getSelection && !getSelection()) {
                     return;
                 }
 
@@ -352,7 +352,7 @@
                     split_cleanup(input);
                     return;
                 }
-                else if (tag != old_tag) {
+                else if (tag !== old_tag) {
                     if (o.forceLowercase) {
                         tag = tag.toLowerCase();
                     }
@@ -374,7 +374,7 @@
                     // remove duplicates
                     else if (o.removeDuplicates) {
                         $('.tag-editor-tag:not(.active)', ed).each(function () {
-                            if ($(this).text() == tag) {
+                            if ($(this).text() === tag) {
                                 $(this).closest('li').remove();
                             }
                         });
