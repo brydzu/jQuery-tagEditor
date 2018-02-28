@@ -1,4 +1,4 @@
-# jQuery.mustacheTags
+# jQuery-tagEditor
 
 A fork of https://github.com/Pixabay/jQuery-tagEditor
 
