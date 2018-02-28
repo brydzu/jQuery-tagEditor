@@ -5,11 +5,17 @@
 	License: http://www.opensource.org/licenses/mit-license.php
 */
 
+/**
+ *  @todo - Pressing left at the leftmost column causes the first tag to be
+ *     deleted.
+ *  @todo - Tags do not automatically conjoin if normal text.
+ *  @todo - No way to autoselect all text.
+ */
+
 (function ($) {
     // auto grow input (stackoverflow.com/questions/931207)
     $.fn.tagEditorInput = function () {
-        var t = ' ',
-            e = $(this),
+        var e = $(this),
             n = parseInt(e.css('fontSize')),
             i = $('<span/>').css({
                 position: 'absolute',
@@ -22,14 +28,15 @@
                 letterSpacing: e.css('letterSpacing'),
                 whiteSpace: 'nowrap'
             }),
-            s = function () {
-                if (t !== (t = e.val())) {
-                    i.text(t);
-                    var s = i.width() + n;
-                    e.css('fontSize') > s && (s = e.css('fontSize')), s !== e.width() && e.width(s);
-                }
+            resize = function () {
+                var t = e.val(),
+                    s = i.text(t).width() + n;
+                e.css({
+                    'margin-right': -n,
+                    'width': t.length > 4 ? s : s + n
+                });
             };
-        return i.insertAfter(e), e.bind('keyup keydown focus', s);
+        return i.insertAfter(e), e.bind('keydown focus update', resize);
     };
 
     // plugin with val as parameter for public methods
@@ -50,7 +57,10 @@
 
         // helper
         function escape (tag) {
-            return tag.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return $('<div/>').text(tag).html();
+            // return tag.replace(/&/g, '&amp;').replace(/</g,
+            // '&lt;').replace(/>/g, '&gt;').replace(/"/g,
+            // '&quot;').replace(/'/g, '&#39;');
         }
 
         // build options dictionary with default values
@@ -142,7 +152,7 @@
             ed.append('<li style="width:1px">&nbsp;</li>');
 
             // markup for new tag
-            var new_tag = '<li><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>';
+            var new_tag = '<li><div class="tag-editor-tag normal"></div></div></li>';
 
             // helper: update global data
             function set_placeholder () {
@@ -387,7 +397,8 @@
                         if (old_tag) {
                             update_globals();
                         }
-                    } else {
+                    }
+                    else {
                         // try { input.closest('li').remove(); }
                         // catch (e) {}
                     }
