@@ -8,7 +8,9 @@
 (function ($) {
     // auto grow input (stackoverflow.com/questions/931207)
     $.fn.tagEditorInput = function () {
-        var t = ' ', e = $(this), n = parseInt(e.css('fontSize')),
+        var t = ' ',
+            e = $(this),
+            n = parseInt(e.css('fontSize')),
             i = $('<span/>').css({
                 position: 'absolute',
                 top: -9999,
@@ -19,12 +21,12 @@
                 fontWeight: e.css('fontWeight'),
                 letterSpacing: e.css('letterSpacing'),
                 whiteSpace: 'nowrap'
-            }), s = function () {
-
+            }),
+            s = function () {
                 if (t !== (t = e.val())) {
                     i.text(t);
                     var s = i.width() + n;
-                    20 > s && (s = 20), s !== e.width() && e.width(s);
+                    e.css('fontSize') > s && (s = e.css('fontSize')), s !== e.width() && e.width(s);
                 }
             };
         return i.insertAfter(e), e.bind('keyup keydown focus', s);
@@ -357,7 +359,7 @@
                     tags = splitTags(input.val()),
                     tag = tags.join('');
 
-                if (!tags.length) {
+                if (!tag) {
                     if (old_tag && o.beforeTagDelete(el, ed, tag_list, old_tag) === false) {
                         input.val(old_tag).focus();
                         blur_result = false;
@@ -370,7 +372,7 @@
                         update_globals();
                     }
                 }
-                else if (tags !== old_tag) {
+                else if (tag !== old_tag) {
                     var cb_val = o.beforeTagSave(el, ed, tag_list, old_tag, tags);
                     tags = cb_val || tags;
                     if (cb_val === false) {
@@ -385,23 +387,25 @@
                         if (old_tag) {
                             update_globals();
                         }
+                    } else {
+                        // try { input.closest('li').remove(); }
+                        // catch (e) {}
                     }
-                }
-                if (tag !== old_tag) {
-                    try { input.closest('li').remove(); }
-                    catch (e) {}
+
+                    var elements = [];
                     for (var t = 0; t < tags.length; t++) {
                         if (isMustache(tags[t])) {
-                            $('<li><div class="tag-editor-tag">' + escape(tags[t]) + '</div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed);
+                            elements.push('<div class="tag-editor-tag">' + escape(tags[t]) + '</div><div class="tag-editor-delete"><i></i></div>');
                         }
                         else {
-                            $('<li><div class="tag-editor-tag normal">' + escape(tags[t]) + '</div></li>').appendTo(ed);
+                            elements.push('<div class="tag-editor-tag normal">' + escape(tags[t]) + '</div>');
                         }
                     }
+                    input.parent().parent().replaceWith('<li>' + elements.join('</li><li>') + '</li>');
                     update_globals();
                 }
                 else {
-                    // input.parent().html(escape(tags.join(''))).removeClass('active');
+                    input.parent().html(escape(tags.join(''))).removeClass('active');
                 }
                 set_placeholder();
             });
@@ -542,7 +546,7 @@
         maxLength: 256,
         placeholder: '',
         clickDelete: false,
-        animateDelete: 175,
+        animateDelete: 100,
         sortable: true, // jQuery UI sortable
         autocomplete: null, // options dict for jQuery UI autocomplete
 
