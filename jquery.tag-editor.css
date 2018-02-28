@@ -22,7 +22,7 @@
 
 .tag-editor div {
     float: left;
-    padding: 0 4px;
+    padding: 0px 4px 1px 4px;
 }
 
 .tag-editor .placeholder {
@@ -31,6 +31,7 @@
 }
 
 .tag-editor .tag-editor-spacer {
+    display: none;
     padding: 0;
     width: 8px;
     overflow: hidden;
@@ -39,6 +40,7 @@
 }
 
 .tag-editor input {
+    background: #9ec3de;
     vertical-align: inherit;
     border: 0;
     outline: none;
@@ -67,25 +69,25 @@
 
 /* tag style */
 .tag-editor .tag-editor-tag {
-    padding-left: 5px;
-    color: #46799b;
-    background: #e0eaf1;
+    color: #fff;
+    background: #0084f1;
     white-space: nowrap;
     overflow: hidden;
     cursor: pointer;
-    border-radius: 2px 0 0 2px;
+    border-radius: 8px 0 0 8px;
 }
 
 .tag-editor .tag-editor-tag.normal {
     color: inherit;
     background: inherit;
+    border-radius: inherit;
 }
 
 /* delete icon */
 .tag-editor .tag-editor-delete {
-    background: #e0eaf1;
+    background: #0084f1;
     cursor: pointer;
-    border-radius: 0 2px 2px 0;
+    border-radius: 0 8px 8px 0;
     padding-left: 3px;
     padding-right: 4px;
 }
@@ -97,7 +99,7 @@
 
 .tag-editor .tag-editor-delete i:before {
     font-size: 16px;
-    color: #8ba7ba;
+    color: #74b9f1;
     content: "×";
     font-style: normal;
 }
