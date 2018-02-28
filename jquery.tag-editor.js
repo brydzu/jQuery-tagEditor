@@ -277,7 +277,6 @@
             }
 
             ed.on('click', '.tag-editor-tag', function (e) {
-
                 // delete on right click or ctrl+click -> exit
                 if (o.clickDelete && (e.ctrlKey || e.which > 1)) {
                     return false;
@@ -285,6 +284,7 @@
 
                 if (!$(this).hasClass('active')) {
                     var tag = $(this).text();
+
                     // guess cursor position in text input
                     var left_percent = Math.abs(($(this).offset().left - e.pageX) / $(this).width()),
                         caret_pos = parseInt(tag.length * left_percent),
@@ -419,17 +419,6 @@
                 }, 30);
             });
 
-            // keypress delimiter
-            // var inp;
-            // ed.on('keypress', 'input', function (e) {
-            //     if ('}'.indexOf(String.fromCharCode(e.which)) >= 0) {
-            //         inp = $(this);
-            //         setTimeout(function () {
-            //             tagCleanup(inp);
-            //         }, 20);
-            //     }
-            // });
-
             ed.on('keydown', 'input', function (e) {
                 var $t = $(this),
                     next_tag,
@@ -532,7 +521,7 @@
             if (o.sortable && $.fn.sortable) {
                 ed.sortable({
                     distance: 5,
-                    cancel: '.tag-editor-spacer, input',
+                    cancel: 'input',
                     helper: 'clone',
                     update: function () { update_globals(); }
                 });
