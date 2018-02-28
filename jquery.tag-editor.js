@@ -32,6 +32,19 @@
     // plugin with val as parameter for public methods
     $.fn.tagEditor = function (options, val, blur) {
 
+        function splitTags (input) {
+            var matches = input.match(/{{\s*[\w\.]+\s*}}|[^{}]+/g);
+            return matches ? matches : [];
+        }
+
+        function isMustache (input) {
+            if (!input) {
+                return false;
+            }
+            var matches = input.match(/{{\s*[\w\.]+\s*}}/);
+            return !!matches;
+        }
+
         // helper
         function escape (tag) {
             return tag.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -62,8 +75,13 @@
                         return false;
                     }
                     // insert new tag
-                    $('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed).find('.tag-editor-tag')
-                        .html('<input type="text" maxlength="' + o.maxLength + '">').addClass('active').find('input').val(val).blur();
+                    if (isMustache(val)) {
+                        $('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed).find('.tag-editor-tag')
+                            .html('<input type="text" maxlength="' + o.maxLength + '">').addClass('active').find('input').val(val).blur();
+                    } else {
+                        $('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag normal"></div></li>').appendTo(ed).find('.tag-editor-tag')
+                            .html('<input type="text" maxlength="' + o.maxLength + '">').addClass('active').find('input').val(val).blur();
+                    }
                     if (!blur) {
                         ed.click();
                     }
@@ -157,6 +175,7 @@
                         return val;
                     }
                 }).get();
+                tag_list = splitTags(tag_list.join(''));
                 ed.data('tags', tag_list);
                 el.val(tag_list.join(''));
                 // change callback except for plugin init
@@ -305,7 +324,7 @@
                     exceeded = false,
                     cb_val;
 
-                if (!sub_tags){
+                if (!sub_tags) {
                     return;
                 }
                 for (var i = 0; i < sub_tags.length; i++) {
@@ -316,7 +335,11 @@
                         continue;
                     }
                     old_tags.push(tag);
-                    li.before('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                    if (isMustache(tag)) {
+                        li.before('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                    } else {
+                        li.before('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag normal">' + escape(tag) + '</div></li>');
+                    }
                     if (o.maxTags && old_tags.length >= o.maxTags) {
                         exceeded = true;
                         break;
@@ -332,20 +355,12 @@
                 update_globals();
             }
 
-            function splitTags (input) {
-                var matches = input.match(/{{\s*[\w\.]+\s*}}|[^{}]+/g);
-                return matches ? matches : [];
-            }
-            function isMustache (input) {
-                var matches = input.match(/{{\s*[\w\.]+\s*}}/);
-                return !!matches;
-            }
-
             ed.on('blur', 'input', function (e) {
                 e.stopPropagation();
                 var input = $(this),
                     old_tag = input.data('old_tag'),
-                    tags = splitTags(input.val());
+                    tags = splitTags(input.val()),
+                    tag = tags.join('');
 
                 if (!tags.length) {
                     if (old_tag && o.beforeTagDelete(el, ed, tag_list, old_tag) === false) {
@@ -377,24 +392,22 @@
                         }
                     }
                 }
-                if (tags !== old_tag) {
+                if (tag !== old_tag) {
                     try { input.closest('li').remove(); }
                     catch (e) {}
                     // input.parent().remove();
                     for (var t = 0; t < tags.length; t++) {
-                        console.log(input);
-                        window.tmp = input;
-                        var new_tag;
-                        if (isMustache(tags[t])){
-                            new_tag = '<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tags[t]) + '</div><div class="tag-editor-delete"><i></i></div></li>';
-                        } else {
-                            new_tag = '<li><div class="tag-editor-tag">' + escape(tags[t]) + '</div></li>';
+                        if (isMustache(tags[t])) {
+                            $('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tags[t]) + '</div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed);
                         }
-                        $(new_tag).appendTo(ed);
+                        else {
+                            $('<li><div class="tag-editor-tag normal">' + escape(tags[t]) + '</div></li>').appendTo(ed);
+                        }
                     }
                     update_globals();
-                } else {
-                    input.parent().html(escape(tags.join('')));
+                }
+                else {
+                    input.parent().html(escape(tags.join(''))).removeClass('active');
                 }
                 set_placeholder();
             });
@@ -450,36 +463,20 @@
                 // else if (e.which === 9) {
                 //     // shift+tab
                 //     if (e.shiftKey) {
-                //         prev_tag = $t.closest('li').prev('li').find('.tag-editor-tag');
-                //         if (prev_tag.length) {
-                //             prev_tag.click().find('input').caret(0);
-                //         }
-                //         else if ($t.val() && !(o.maxTags && ed.data('tags').length >= o.maxTags)) {
-                //             $(new_tag).before($t.closest('li')).find('.tag-editor-tag').click();
-                //         }// allow tabbing to previous element
-                //         else {
-                //             el.attr('disabled', 'disabled');
-                //             setTimeout(function () { el.removeAttr('disabled'); }, 30);
-                //             return;
-                //         }
-                //         return false;
-                //         // tab
-                //     }
-                //     else {
-                //         next_tag = $t.closest('li').next('li').find('.tag-editor-tag');
-                //         if (next_tag.length) {
-                //             next_tag.click().find('input').caret(0);
-                //         }
-                //         else if ($t.val()) {
-                //             ed.click();
-                //         }
-                //         else {
-                //             return;
-                //         } // allow tabbing to next element
-                //         return false;
-                //     }
-                // }
-                // del key
+                //         prev_tag =
+                // $t.closest('li').prev('li').find('.tag-editor-tag'); if
+                // (prev_tag.length) { prev_tag.click().find('input').caret(0);
+                // } else if ($t.val() && !(o.maxTags && ed.data('tags').length
+                // >= o.maxTags)) {
+                // $(new_tag).before($t.closest('li')).find('.tag-editor-tag').click();
+                // }// allow tabbing to previous element else {
+                // el.attr('disabled', 'disabled'); setTimeout(function () {
+                // el.removeAttr('disabled'); }, 30); return; } return false;
+                // // tab } else { next_tag =
+                // $t.closest('li').next('li').find('.tag-editor-tag'); if
+                // (next_tag.length) { next_tag.click().find('input').caret(0);
+                // } else if ($t.val()) { ed.click(); } else { return; } //
+                // allow tabbing to next element return false; } } del key
                 else if (e.which === 46 && (!$.trim($t.val()) || ($t.caret() === $t.val().length))) {
                     next_tag = $t.closest('li').next('li').find('.tag-editor-tag');
                     if (next_tag.length) {
@@ -523,7 +520,11 @@
                 var tag = tags[i];
                 if (tag) {
                     tag_list.push(tag);
-                    ed.append('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                    if (isMustache(tag)) {
+                        ed.append('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                    } else {
+                        ed.append('<li><div class="tag-editor-spacer">&nbsp;</div><div class="tag-editor-tag normal">' + escape(tag) + '</div></li>');
+                    }
                 }
             }
             update_globals(true); // true -> no onChange callback
