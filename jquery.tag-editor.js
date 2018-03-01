@@ -36,7 +36,7 @@
                     'width': t.length > 4 ? s : s + n
                 });
             };
-        return i.insertAfter(e), e.bind('keydown focus update', resize);
+        return i.insertAfter(e), e.bind('keydown keyup blur focus update', resize);
     };
 
     // plugin with val as parameter for public methods
@@ -430,6 +430,17 @@
                 }, 30);
             });
 
+            // keypress delimiter
+            var inp;
+            ed.on('keypress', 'input', function (e) {
+                if (String.fromCharCode(e.which) === ' ') {
+                    inp = $(this);
+                    setTimeout(function () {
+                        tagCleanup(inp);
+                    }, 20);
+                }
+            });
+
             ed.on('keydown', 'input', function (e) {
                 var $t = $(this),
                     next_tag,
@@ -457,24 +468,7 @@
                     }
                     return false;
                 }
-                // tab key
-                // else if (e.which === 9) {
-                //     // shift+tab
-                //     if (e.shiftKey) {
-                //         prev_tag =
-                // $t.closest('li').prev('li').find('.tag-editor-tag'); if
-                // (prev_tag.length) { prev_tag.click().find('input').caret(0);
-                // } else if ($t.val() && !(o.maxTags && ed.data('tags').length
-                // >= o.maxTags)) {
-                // $(new_tag).before($t.closest('li')).find('.tag-editor-tag').click();
-                // }// allow tabbing to previous element else {
-                // el.attr('disabled', 'disabled'); setTimeout(function () {
-                // el.removeAttr('disabled'); }, 30); return; } return false;
-                // // tab } else { next_tag =
-                // $t.closest('li').next('li').find('.tag-editor-tag'); if
-                // (next_tag.length) { next_tag.click().find('input').caret(0);
-                // } else if ($t.val()) { ed.click(); } else { return; } //
-                // allow tabbing to next element return false; } } del key
+                // del key
                 else if (e.which === 46 && (!$.trim($t.val()) || ($t.caret() === $t.val().length))) {
                     next_tag = $t.closest('li').next('li').find('.tag-editor-tag');
                     if (next_tag.length) {
@@ -493,7 +487,6 @@
                     if (o.maxTags && ed.data('tags').length >= o.maxTags) {
                         ed.find('input').blur();
                     }
-
                     return false;
                 }
                 // pos1
