@@ -56,11 +56,17 @@
         }
 
         // helper
-        function escape (tag) {
-            return $('<div/>').text(tag).html();
-            // return tag.replace(/&/g, '&amp;').replace(/</g,
-            // '&lt;').replace(/>/g, '&gt;').replace(/"/g,
-            // '&quot;').replace(/'/g, '&#39;');
+        function escape (tag, addSpans) {
+            if (typeof addSpans === 'undefined') {
+                addSpans = true;
+            }
+            // Strip initial HTML.
+            var tag = $('<div/>').text(tag).html();
+            // Wrap mustache tags.
+            if (addSpans) {
+                tag = tag.replace('{{', '<span>{{</span>').replace('}}', '<span>}}</span>');
+            }
+            return tag;
         }
 
         // build options dictionary with default values
@@ -294,11 +300,10 @@
 
                 if (!$(this).hasClass('active')) {
                     var tag = $(this).text();
-
                     // guess cursor position in text input
                     var left_percent = Math.abs(($(this).offset().left - e.pageX) / $(this).width()),
                         caret_pos = parseInt(tag.length * left_percent),
-                        input = $(this).html('<input type="text" maxlength="' + o.maxLength + '" value="' + escape(tag) + '">').addClass('active').find('input');
+                        input = $(this).html('<input type="text" maxlength="' + o.maxLength + '" value="' + escape(tag, false) + '">').addClass('active').find('input');
                     input.data('old_tag', tag).tagEditorInput().focus().caret(caret_pos);
                     if (o.autocomplete) {
                         var aco = $.extend({}, o.autocomplete);
@@ -453,7 +458,7 @@
                         prev_tag.click().find('input').caret(-1);
                     }
                     else if ($t.val() && !(o.maxTags && ed.data('tags').length >= o.maxTags)) {
-                        $(new_tag).before($t.closest('li')).find('.tag-editor-tag').click();
+                        $(new_tag).insertBefore($t.closest('li')).find('.tag-editor-tag').click();
                     }
                     return false;
                 }
