@@ -1,13 +1,11 @@
 /*
-	jQuery tagEditor v1.0.21
+    jQuery tagEditor v1.0.21
     Copyright (c) 2014 Simon Steinberger / Pixabay
     GitHub: https://github.com/Pixabay/jQuery-tagEditor
-	License: http://www.opensource.org/licenses/mit-license.php
+    License: http://www.opensource.org/licenses/mit-license.php
 */
 
 /**
- *  @todo - Pressing left at the leftmost column causes the first tag to be
- *     deleted.
  *  @todo - Tags do not automatically conjoin if normal text.
  *  @todo - No way to autoselect all text.
  */
@@ -43,7 +41,7 @@
     $.fn.tagEditor = function (options, val, blur) {
 
         function splitTags (input) {
-            var matches = input.match(/{{\s*[\w\.]+\s*}}|[^{}]+/g);
+            var matches = input.match(/{{\s*[#|\/]?[\w\.]+\s*}}|[^{}]+/g);
             return matches ? matches : [];
         }
 
@@ -51,8 +49,27 @@
             if (!input) {
                 return false;
             }
-            var matches = input.match(/{{\s*[\w\.]+\s*}}/);
+            var matches = input.match(/{{\s*[#|\/]?[\w\.]+\s*}}/);
             return !!matches;
+        }
+
+        function className (input) {
+            if (o.allowedTags) {
+                if (input.indexOf('{{#') === 0 || input.indexOf('{{/') === 0) {
+                    return 'warn';
+                }
+                if (o.allowedTags instanceof Array) {
+                    if (mQuery.inArray(input, o.allowedTags) === -1) {
+                        return 'danger';
+                    }
+                }
+                if (o.allowedTags instanceof Function) {
+                    if (mQuery.inArray(input, o.allowedTags()) === -1) {
+                        return 'danger';
+                    }
+                }
+            }
+            return '';
         }
 
         // helper
@@ -61,7 +78,7 @@
                 addSpans = true;
             }
             // Strip initial HTML.
-            var tag = $('<div/>').text(tag).html();
+            tag = $('<div/>').text(tag).html();
             // Wrap mustache tags.
             if (addSpans) {
                 tag = tag.replace('{{', '<span>{{</span>').replace('}}', '<span>}}</span>');
@@ -95,7 +112,7 @@
                     }
                     // insert new tag
                     if (isMustache(val)) {
-                        $('<li><div class="tag-editor-tag"></div><div class="tag-editor-delete"><i></i></div></li>').appendTo(ed).find('.tag-editor-tag')
+                        $('<li><div class="tag-editor-tag ' + className(val) + '"></div><div class="tag-editor-delete ' + className(val) + '"><i></i></div></li>').appendTo(ed).find('.tag-editor-tag')
                             .html('<input type="text" maxlength="' + o.maxLength + '">').addClass('active').find('input').val(val).blur();
                     }
                     else {
@@ -346,7 +363,7 @@
                     }
                     old_tags.push(tag);
                     if (isMustache(tag)) {
-                        li.before('<li><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                        li.before('<li><div class="tag-editor-tag' + className(tag) + '">' + escape(tag) + '</div><div class="tag-editor-delete' + className(tag) + '"><i></i></div></li>');
                     }
                     else {
                         li.before('<li><div class="tag-editor-tag normal">' + escape(tag) + '</div></li>');
@@ -411,7 +428,7 @@
                     var elements = [];
                     for (var t = 0; t < tags.length; t++) {
                         if (isMustache(tags[t])) {
-                            elements.push('<div class="tag-editor-tag">' + escape(tags[t]) + '</div><div class="tag-editor-delete"><i></i></div>');
+                            elements.push('<div class="tag-editor-tag '+ className(tags[t]) + '">' + escape(tags[t]) + '</div><div class="tag-editor-delete ' + className(tags[t]) + '"><i></i></div>');
                         }
                         else {
                             elements.push('<div class="tag-editor-tag normal">' + escape(tags[t]) + '</div>');
@@ -517,7 +534,7 @@
                 if (tag) {
                     tag_list.push(tag);
                     if (isMustache(tag)) {
-                        ed.append('<li><div class="tag-editor-tag">' + escape(tag) + '</div><div class="tag-editor-delete"><i></i></div></li>');
+                        ed.append('<li><div class="tag-editor-tag ' + className(tag) + '">' + escape(tag) + '</div><div class="tag-editor-delete ' + className(tag) + '"><i></i></div></li>');
                     }
                     else {
                         ed.append('<li><div class="tag-editor-tag normal">' + escape(tag) + '</div></li>');
@@ -540,6 +557,7 @@
 
     $.fn.tagEditor.defaults = {
         initialTags: [],
+        allowedTags: [],
         maxTags: 0,
         maxLength: 256,
         placeholder: '',
